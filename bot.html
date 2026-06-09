@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - Elegant UI</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        /* Import Font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #ffffff;
+        }
+
+        /* Container Chat */
+        .chat-container {
+            width: 100%;
+            max-width: 450px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .chat-header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            letter-spacing: 1px;
+            font-size: 1.1rem;
+            color: #00e5ff;
+        }
+
+        /* Area Pesan */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* Bubble Pesan */
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .message p {
+            margin-bottom: 8px;
+        }
+        .message p:last-child {
+            margin-bottom: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #00b4db, #0083b0);
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+
+        .message.bot {
+            background: rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%; /* Agar blok kode bisa merentang optimal */
+        }
+
+        /* =========== STYLING BLOK KODE & TOMBOL COPY =========== */
+        .code-wrapper {
+            position: relative;
+            margin: 10px 0;
+        }
+
+        .message pre {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 35px 12px 12px 12px; /* Padding atas lebih besar untuk tempat tombol copy */
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin: 0;
+        }
+
+        .message code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #00e5ff;
+        }
+
+        .message pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* Tombol Copy */
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .copy-btn.copied {
+            background: #00e5ff;
+            color: #0f2027;
+            border-color: #00e5ff;
+        }
+        /* ======================================================= */
+
+        /* Loading Indikator */
+        .loading {
+            font-size: 0.8rem;
+            color: #aaa;
+            align-self: flex-start;
+            display: none;
+            margin-left: 10px;
+        }
+
+        /* Area Input */
+        .chat-input-area {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            outline: none;
+            font-size: 0.95rem;
+            transition: 0.3s;
+        }
+
+        .chat-input-area input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .chat-input-area input:focus {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .chat-input-area button {
+            background: #00e5ff;
+            color: #0f2027;
+            border: none;
+            border-radius: 10px;
+            padding: 0 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .chat-input-area button:hover {
+            background: #00b4db;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            ✨ WormGPT Assistant
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot">Halo! Ada yang bisa saya bantu hari ini?</div>
+        </div>
+        
+        <div class="loading" id="loading">Memproses respons...</div>
+
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="Ketik pesanmu di sini..." autocomplete="off">
+            <button onclick="sendMessage()" id="send-btn">Kirim</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const loading = document.getElementById('loading');
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            
+            if (sender === 'bot') {
+                msgDiv.innerHTML = marked.parse(text);
+                
+                // --- LOGIKA MENAMBAHKAN TOMBOL COPY ---
+                const preElements = msgDiv.querySelectorAll('pre');
+                preElements.forEach((pre) => {
+                    // Buat wadah (wrapper) untuk posisi absolut tombol
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'code-wrapper';
+                    
+                    // Buat tombol copy
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.innerText = 'Copy';
+                    
+                    // Bungkus elemen <pre> dengan wrapper
+                    pre.parentNode.insertBefore(wrapper, pre);
+                    wrapper.appendChild(pre);
+                    wrapper.appendChild(copyBtn);
+                    
+                    // Event klik untuk menyalin kode
+                    copyBtn.addEventListener('click', async () => {
+                        const codeText = pre.querySelector('code').innerText;
+                        try {
+                            await navigator.clipboard.writeText(codeText);
+                            copyBtn.innerText = 'Copied!';
+                            copyBtn.classList.add('copied');
+                            
+                            // Kembalikan teks tombol setelah 2 detik
+                            setTimeout(() => {
+                                copyBtn.innerText = 'Copy';
+                                copyBtn.classList.remove('copied');
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Gagal menyalin:', err);
+                            copyBtn.innerText = 'Error';
+                        }
+                    });
+                });
+                // --------------------------------------
+
+            } else {
+                msgDiv.textContent = text;
+            }
+            
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage('user', text);
+            userInput.value = '';
+            
+            loading.style.display = 'block';
+            sendBtn.disabled = true;
+
+            try {
+                const apiUrl = `https://api-nanzz.my.id/docs/api/ai/worm-gpt.php?prompt=${encodeURIComponent(text)}`;
+                const response = await fetch(apiUrl);
+                
+                const rawText = await response.text();
+                let finalReply = rawText; 
+
+                try {
+                    const data = JSON.parse(rawText);
+                    
+                    if (data && data.result && data.result.response) {
+                        finalReply = data.result.response;
+                    } 
+                    else if (data && data.response) {
+                        finalReply = data.response;
+                    }
+
+                    if (typeof finalReply === 'string') {
+                        finalReply = finalReply.replace(/^\*\*WormGPT:\*\*\s*/i, '');
+                    }
+                    
+                } catch (e) {
+                    console.log("Response bukan format JSON:", e);
+                }
+
+                appendMessage('bot', finalReply);
+
+            } catch (error) {
+                appendMessage('bot', 'Maaf, terjadi kesalahan saat menghubungi server AI. Pastikan koneksi stabil.');
+                console.error('Error API:', error);
+            } finally {
+                loading.style.display = 'none';
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
